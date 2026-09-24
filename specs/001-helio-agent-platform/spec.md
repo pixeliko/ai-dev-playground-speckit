@@ -78,6 +78,9 @@ pipeline, run it, and inspect stage decisions, checks, and final status.
 8. **Given** a run at its paid-model token quota without an eligible local model, **When**
    the limit is reached, **Then** the platform marks the run pending and saves its session.
    After an authorized quota increase, it resumes the same run from that saved point.
+9. **Given** an unclassified source or an Open WebUI action that would send project data
+   to an external service, **When** no current project approval and task scope cover every
+   data category, **Then** the platform blocks dispatch and records the reason.
 
 ---
 
@@ -113,7 +116,7 @@ source code.
 
 ### User Story 4 - Compare Execution Strategies (Priority: P3)
 
-A Tech Lead runs the same approved specification through different agent pipelines in
+A Tech Lead runs the same accepted specification revision through different agent pipelines in
 isolated workspaces. The platform preserves each result and compares quality, elapsed time,
 model use, and token cost without mixing outputs.
 
@@ -124,7 +127,7 @@ separate outputs, checks, and resource records.
 
 **Acceptance Scenarios**:
 
-1. **Given** one approved specification, **When** two strategies are launched, **Then**
+1. **Given** one accepted specification revision, **When** two strategies are launched, **Then**
    each run has an isolated workspace and traceable source revision.
 2. **Given** completed runs, **When** the user opens the comparison, **Then** it shows
    outcomes, failed or passed checks, elapsed time, models, tokens, and decisions per run.
@@ -245,14 +248,22 @@ the decision, resolution, task record, and run metrics from the project workspac
 - **FR-021**: The platform MUST verify relevant existing behavior before it accepts a change.
   Where behavior cannot be checked deterministically, it MUST use recorded evaluator criteria.
 - **FR-022**: Before sending project data to an external model or service, the platform MUST
-  verify that the provider is approved for that project and that the data category is in the
-  task's declared minimum scope. It MUST block other transfers and record the provider,
-  purpose, data categories, time, and decision without storing the transferred content in
-  the transfer log.
+  classify each source or payload object against a project-configurable data-category
+  registry and verify that each payload ref is in the task's needed-source manifest.
+  The dispatch categories MUST equal the union of those payload labels and fit the
+  agent's grant and current project approval for that provider. An unknown or
+  unclassified category MUST block dispatch. The same rule applies to Open WebUI actions
+  and telemetry exports that send project data outside the local boundary. The platform
+  MUST record the provider, purpose, categories, policy revision, time, and allow or deny
+  decision before dispatch without storing transferred content in the transfer log.
 - **FR-023**: The platform MUST assign permissions per project. Project Owners and Tech Leads
   MUST be able to approve external providers and administer runs. Other people MUST have
   only their assigned read or run permissions. Agents MUST be limited to the permissions
   delegated for their task. The platform MUST reject and record unauthorized actions.
+  A fresh local installation MUST create its first operator through a one-time guided
+  setup without a shared default credential or fixture identity. Operator sessions MUST
+  be revocable; creating a project grants its creator the Owner role for that project
+  only. External identity providers MAY replace the local operator adapter later.
 - **FR-024**: In normal mode, the platform MUST require Project Owner or Tech Lead approval
   of a generated specification before a run. In autonomous or sandbox mode, it MAY accept
   the specification automatically only when all project-defined checks pass. It MUST
@@ -301,7 +312,7 @@ the decision, resolution, task record, and run metrics from the project workspac
 - **SC-003**: A Tech Lead can reconstruct one existing project from multiple repositories
   and identify source evidence and unresolved gaps. A baseline with passing checks and no
   blocking gaps is accepted automatically; a failed or inconclusive check blocks execution.
-- **SC-004**: The same approved specification can run under at least two isolated strategies,
+- **SC-004**: The same accepted specification revision can run under at least two isolated strategies,
   with complete comparison of quality, elapsed time, model use, and tokens.
 - **SC-005**: Local, Dev, Pre, and Pro configuration can be reviewed. The three named
   deployment targets can be selected where applicable, with missing prerequisites
@@ -313,7 +324,9 @@ the decision, resolution, task record, and run metrics from the project workspac
 - **SC-008**: A reviewer can open a prototype and its mocks alongside another review run
   without a resource collision.
 - **SC-009**: A run cannot send project data to an unapproved provider or outside the
-  declared task scope. Every permitted or blocked transfer has an audit record.
+  declared task scope, and unclassified data cannot leave the local boundary. Every
+  permitted or blocked transfer has an audit record, including Open WebUI-initiated
+  dispatch and telemetry export.
 - **SC-010**: A member or agent without the required project permission cannot approve
   a provider or control a run; each denied action is recorded.
 - **SC-011**: A normal-mode run remains blocked until an authorized person approves its

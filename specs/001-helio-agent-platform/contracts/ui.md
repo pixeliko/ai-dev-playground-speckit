@@ -13,6 +13,8 @@ inspect `HX-Request` and include `Vary: HX-Request`.
 
 | Route | Full page or fragment | Required information |
 | --- | --- | --- |
+| `/dashboard/login` | Full page | Local operator login, generic invalid-credential message, and session creation without revealing a credential in a URL or log. |
+| `/dashboard/logout` | Form action | Revoke the current session and clear its cookie; a cookie-based action needs CSRF protection. |
 | `/dashboard/projects` | Full page | Project list, kind, current state, next action. |
 | `/dashboard/projects/{id}/access` | Full page and policy fragment | Project roles, permitted actions, approved providers and data categories, transfer audit. Owner and Tech Lead see management controls. |
 | `/dashboard/projects/{id}/interview` | Full page and question fragment | Current question, prior answers, unanswered items, save result. |

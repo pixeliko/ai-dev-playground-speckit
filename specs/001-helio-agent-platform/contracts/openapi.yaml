@@ -19,7 +19,7 @@ securityDefinitions:
     type: apiKey
     name: Authorization
     in: header
-    description: "Bearer token; identity provider and session setup are deployment concerns."
+    description: "Opaque bearer session token. The local first operator is created by the guided installer; external identity providers may use the same identity port. Browser sessions use a separate secure cookie."
 security:
   - OperatorToken: []
 parameters:
@@ -88,6 +88,38 @@ paths:
             required: [status]
             properties:
               status: { type: string, enum: [ready] }
+  /auth/sessions:
+    post:
+      operationId: createOperatorSession
+      tags: [Identity]
+      security: []
+      description: Authenticates a bootstrapped local operator. Rejects absent, invalid, or disabled credentials. It does not create an operator.
+      parameters:
+        - in: body
+          name: credentials
+          required: true
+          schema: { $ref: "#/definitions/OperatorCredentials" }
+      responses:
+        "201":
+          description: New opaque session token; return the token only once and never log it
+          schema: { $ref: "#/definitions/OperatorSession" }
+        "400": { $ref: "#/responses/BadRequest" }
+        "401": { $ref: "#/responses/Unauthorized" }
+  /auth/sessions/current:
+    get:
+      operationId: getCurrentOperator
+      tags: [Identity]
+      responses:
+        "200":
+          description: Authenticated operator identity
+          schema: { $ref: "#/definitions/OperatorIdentity" }
+        "401": { $ref: "#/responses/Unauthorized" }
+    delete:
+      operationId: revokeCurrentSession
+      tags: [Identity]
+      responses:
+        "204": { description: Current session revoked }
+        "401": { $ref: "#/responses/Unauthorized" }
   /projects:
     get:
       operationId: listProjects
@@ -113,6 +145,7 @@ paths:
           description: Created project
           schema: { $ref: "#/definitions/Project" }
         "400": { $ref: "#/responses/BadRequest" }
+        "401": { $ref: "#/responses/Unauthorized" }
   /projects/{projectId}:
     parameters: [{ $ref: "#/parameters/projectId" }]
     get:
@@ -176,6 +209,62 @@ paths:
         "201":
           description: Immutable provider-policy revision
           schema: { $ref: "#/definitions/ProviderPolicy" }
+        "403": { $ref: "#/responses/Forbidden" }
+  /projects/{projectId}/data-categories:
+    parameters: [{ $ref: "#/parameters/projectId" }]
+    get:
+      operationId: listDataCategories
+      tags: [Access]
+      description: Project members can view active and retired category revisions.
+      responses:
+        "200":
+          description: Project category registry
+          schema:
+            type: array
+            items: { $ref: "#/definitions/DataCategory" }
+        "403": { $ref: "#/responses/Forbidden" }
+    post:
+      operationId: defineDataCategory
+      tags: [Access]
+      description: Only a Project Owner or Tech Lead can define or retire a project category; each change creates a revision.
+      parameters:
+        - in: body
+          name: category
+          required: true
+          schema: { $ref: "#/definitions/DataCategoryInput" }
+      responses:
+        "201":
+          description: Immutable category revision
+          schema: { $ref: "#/definitions/DataCategory" }
+        "400": { $ref: "#/responses/BadRequest" }
+        "403": { $ref: "#/responses/Forbidden" }
+  /projects/{projectId}/source-labels:
+    parameters: [{ $ref: "#/parameters/projectId" }]
+    get:
+      operationId: listSourceLabels
+      tags: [Access]
+      description: Lists classification references, never source content.
+      responses:
+        "200":
+          description: Project source labels
+          schema:
+            type: array
+            items: { $ref: "#/definitions/SourceLabel" }
+        "403": { $ref: "#/responses/Forbidden" }
+    post:
+      operationId: classifySource
+      tags: [Access]
+      description: Only a Project Owner or Tech Lead can approve a source or payload-object label; each change creates a revision.
+      parameters:
+        - in: body
+          name: label
+          required: true
+          schema: { $ref: "#/definitions/SourceLabelInput" }
+      responses:
+        "201":
+          description: Immutable source-label revision
+          schema: { $ref: "#/definitions/SourceLabel" }
+        "400": { $ref: "#/responses/BadRequest" }
         "403": { $ref: "#/responses/Forbidden" }
   /projects/{projectId}/transfers:
     parameters: [{ $ref: "#/parameters/projectId" }]
@@ -642,6 +731,25 @@ paths:
           description: Recorded entry
           schema: { $ref: "#/definitions/KnowledgeEntry" }
 definitions:
+  OperatorCredentials:
+    type: object
+    required: [operator_name, passphrase]
+    properties:
+      operator_name: { type: string, minLength: 1 }
+      passphrase: { type: string, minLength: 1, format: password }
+  OperatorIdentity:
+    type: object
+    required: [id, operator_name]
+    properties:
+      id: { type: string }
+      operator_name: { type: string }
+  OperatorSession:
+    type: object
+    required: [token, expires_at, operator]
+    properties:
+      token: { type: string, minLength: 1 }
+      expires_at: { type: string, format: date-time }
+      operator: { $ref: "#/definitions/OperatorIdentity" }
   Problem:
     type: object
     required: [code, message]
@@ -690,6 +798,7 @@ definitions:
       permitted_data_categories:
         type: array
         items: { type: string }
+        description: Active category IDs from this project's registry.
       status: { type: string, enum: [approved, revoked] }
       rationale: { type: string }
   ProviderPolicy:
@@ -703,6 +812,42 @@ definitions:
           revision: { type: integer, minimum: 1 }
           approved_by: { type: string }
           approved_at: { type: string, format: date-time }
+  DataCategoryInput:
+    type: object
+    required: [key, description, status]
+    properties:
+      key: { type: string, minLength: 1 }
+      description: { type: string, minLength: 1 }
+      status: { type: string, enum: [active, retired] }
+  DataCategory:
+    allOf:
+      - { $ref: "#/definitions/DataCategoryInput" }
+      - type: object
+        required: [id, project_id, revision]
+        properties:
+          id: { type: string }
+          project_id: { type: string }
+          revision: { type: integer, minimum: 1 }
+  SourceLabelInput:
+    type: object
+    required: [source_ref, category_ids]
+    properties:
+      source_ref: { type: string, minLength: 1 }
+      category_ids:
+        type: array
+        minItems: 1
+        items: { type: string }
+  SourceLabel:
+    allOf:
+      - { $ref: "#/definitions/SourceLabelInput" }
+      - type: object
+        required: [id, project_id, revision, classified_by, classified_at]
+        properties:
+          id: { type: string }
+          project_id: { type: string }
+          revision: { type: integer, minimum: 1 }
+          classified_by: { type: string }
+          classified_at: { type: string, format: date-time }
   TransferDecision:
     type: object
     required: [id, project_id, provider_id, purpose, data_categories, policy_revision, decision, reason, occurred_at]
@@ -716,6 +861,13 @@ definitions:
       data_categories:
         type: array
         items: { type: string }
+      source_refs:
+        type: array
+        items: { type: string }
+      classification_revisions:
+        type: array
+        items: { type: integer, minimum: 1 }
+      task_scope_ref: { type: string }
       policy_revision: { type: integer, minimum: 0 }
       decision: { type: string, enum: [allowed, denied] }
       reason: { type: string }

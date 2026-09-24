@@ -36,7 +36,7 @@ by clients and retained in run history.
 | `run.queued` | specification revision, pipeline version | Run accepted. |
 | `run.started` | workspace ID, source revision | Execution began. |
 | `acceptance.result` | subject type and revision, mode, decision kind, result, check/evidence references | A specification or baseline was accepted or blocked. A failed or inconclusive required check cannot produce acceptance. |
-| `transfer.decision` | provider ID, data categories, policy revision, allow/deny, reason, audit reference | An outbound transfer was checked before dispatch. No content is included. |
+| `transfer.decision` | provider ID, source refs, data categories, classification revisions, task scope ref, policy revision, allow/deny, reason, audit reference | An outbound transfer was checked before dispatch. No content or credentials are included. |
 | `stage.started` | agent profile version, attempt | Stage began. |
 | `stage.output` | output reference, content type | Output is available; secrets are not embedded. |
 | `usage.recorded` | provider and model IDs, billing class, observed/estimated/unknown, ledger reference | Model usage was reconciled; unknown is never treated as zero. |
@@ -57,6 +57,18 @@ run needs `quota.changed` and a valid checkpoint before `run.resumed`. The state
 persists token reservations, transfer decisions, checkpoints, and events before the
 corresponding dispatch or state change. Replayed events retain their original IDs and
 sequences.
+
+## Local identity and project audit
+
+Identity and classification changes are state-owner audit events, not run SSE
+events. `operator.bootstrapped` records the operator ID and local setup source;
+`session.revoked` records an operator and session reference; `auth.denied` records
+the action and a safe reason; `data-category.changed` records a project category
+revision; and `source-label.changed` records a source ref and classification
+revision. These events contain no passphrase, token, source content, or credential.
+They are committed before the related current view changes. A project action
+denial retains its project ID. Local login failures without a project ID stay in
+the identity audit, not a project run stream.
 
 ## AG-UI adapter
 

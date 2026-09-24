@@ -11,10 +11,15 @@ This plan ends at Phase 1 design. It does not create source code or implementati
 Helio lets a Product Owner define a greenfield or brownfield project, accept a
 specification through the selected mode, inspect two roadmaps, and run controlled
 agent pipelines. A Tech Lead can reconstruct an existing project, compare isolated
-strategies, inspect evidence, and prepare prototypes and environments. The first
-delivery is a modular Python control plane with a contract-first API, an HTMX
+strategies, inspect evidence, and prepare prototypes and environments. Strategy
+comparison uses one immutable accepted specification revision, whether acceptance
+was manual in normal mode or automatic after passing checks in an authorized
+autonomous or sandbox mode. The first delivery is a modular Python control plane
+with a contract-first API, an HTMX
 dashboard, one owner for DuckDB writes, and isolated workers. Project roles and
-provider policy guard all run actions and outbound data. A synchronous paid-token
+provider policy guard all run actions and outbound data. A guided local bootstrap
+creates the first operator without a default credential. Project-specific source
+labels and task scopes block unclassified external transfers. A synchronous paid-token
 ledger permits configured free-local fallback or a durable pending checkpoint for
 later resumption of the same run. Each external harness, knowledge tool, model
 runtime, and deployment target enters through an adapter. See [research.md](research.md)
@@ -81,9 +86,12 @@ isolated run workspaces. A production scale target is not specified.
 | III. Brownfield baseline and regression proof | Pass | Pass | Automatic baseline checks accept only passing versions; [quickstart](quickstart.md) tests conflict and regression paths. |
 | Agreed local and enterprise constraints | Pass | Pass | [Research](research.md) records feasibility and adapter decisions; [quickstart](quickstart.md) defines local checks. |
 | Review and exception evidence | Pass | Pass | Run events, mode-specific acceptance decisions, and override records are retained in the [data model](data-model.md). |
-| Clarified project access and egress | Pass | Pass | [API](contracts/openapi.yaml), [runtime port](contracts/agent-runtime.md), and [quickstart](quickstart.md) cover project roles, task grants, provider approvals, and transfer audit. |
+| Clarified project access and egress | Pass | Pass | [API](contracts/openapi.yaml), [runtime port](contracts/agent-runtime.md), [Open WebUI boundary](contracts/open-webui.md), and [quickstart](quickstart.md) cover first-operator bootstrap, project roles, source classification, task grants, provider approvals, and transfer audit. |
 | Clarified paid-token quota | Pass | Pass | [Data model](data-model.md), [events](contracts/events.md), and [quickstart](quickstart.md) cover atomic reservations, eligible local fallback, pending checkpoint, and authorized resume. |
 
+These design-conformance results do not record Product Owner or Tech Lead approval.
+The pre-implementation T123 review remains pending in
+[implementation-readiness.md](../../docs/helio/implementation-readiness.md).
 No constitutional violation is required by this design. Ratification and governance
 authority TODOs in the constitution remain project governance work; they do not
 justify bypassing the technical gates. External credentials and model artifacts are
@@ -162,9 +170,9 @@ current Spec Kit development setup.
 
 | Slice | User outcome | Dependency | Human work that can overlap | Agent work that can overlap |
 | --- | --- | --- | --- | --- |
-| Foundation | Contract, local installer, state owner, event and evidence model | None | DevOps setup and UX tokens can proceed with backend domain work | Contract, UI, and fixture research can run in parallel |
+| Foundation | Contract, local installer and operator bootstrap, state owner, event and evidence model | Pre-implementation readiness review | DevOps setup and UX tokens can proceed with backend domain work | Contract, UI, and fixture research can run in parallel |
 | Intake | Guided interview, mode-specific specification acceptance, both roadmaps | Foundation | PO acceptance review and UX can overlap backend intake work | Independent spec generation and verification; automatic acceptance waits for all required checks |
-| Pipelines | Catalog, run engine, project access, provider policy, quota ledger, gates, monitoring | Foundation; accepted spec for live use | Agent adapters and access UI can proceed in parallel after runtime port is fixed | Stage branches run in parallel; quota reservations are serialized; joins and gates block progress |
+| Pipelines | Catalog, run engine, project access, data classification, provider policy, quota ledger, gates, monitoring | Foundation; accepted spec for live use | Agent adapters and access UI can proceed in parallel after runtime port is fixed | Stage branches run in parallel; quota reservations are serialized; joins and gates block progress |
 | Brownfield | Multi-repo baseline and automatic checks | Foundation | Repository parsing and evidence UI can proceed together | Per-repository extraction can run in parallel; required checks block acceptance until all pass |
 | Comparison and prototypes | Isolated strategies and review stacks | Pipelines | Comparison UI and Compose isolation can proceed together | Strategies run in parallel; comparison waits for terminal results |
 | Environments and knowledge | Deployment validation and living project record | Foundation; run evidence for trace links | Knowledge and environment adapters can proceed together | Source indexing and trace export can run asynchronously |

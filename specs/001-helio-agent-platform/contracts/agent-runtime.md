@@ -16,6 +16,30 @@ revision, paid-token quota revision, and the stage's configured local fallback m
 references. The orchestrator checks the grant and records an allow or deny transfer
 decision before sending task-required data to a provider.
 
+## Data classification and external transport
+
+Each project defines its own active data-category IDs. The project Owner or Tech
+Lead assigns immutable classification revisions to source or payload object refs.
+An agent may request a new label but cannot approve it for its own transfer. The
+system may assign a derived artifact the union of its classified inputs' category
+IDs; a new source without classified inputs needs an approved label. This lets
+later autonomous stages use inherited labels without a new human decision. The
+stage declares a purpose and the source refs needed for its task. Before each
+nonlocal dispatch, Helio resolves the actual payload refs and their
+classification revisions. It denies unknown or unclassified refs. Every actual
+payload ref must be in the stage's needed-source manifest. The declared categories
+for that dispatch must equal the union of categories on the payload refs; an extra
+category is not a minimum scope. These categories must also be inside the live
+task grant and the provider's current project policy. A revoked policy blocks
+dispatch even if the run snapshot contains an earlier approval. The decision is
+persisted before transport and
+contains refs and category IDs, not source content or credentials.
+
+This rule also covers prior-resolution context injected at task start, telemetry
+exports, and an Open WebUI action that sends project data to Open WebUI or a tool
+behind it. Local-only rendering does not create an external transfer. The
+[Open WebUI contract](open-webui.md) defines its action boundary.
+
 ## Runtime events
 
 Every adapter emits `started`, zero or more `output` and `usage` events, and exactly
