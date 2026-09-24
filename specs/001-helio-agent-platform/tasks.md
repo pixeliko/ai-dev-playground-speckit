@@ -34,7 +34,7 @@ description: "Implementation tasks for the Helio Agent Platform"
 - [ ] T005 [P] Add a distinct Compose project for API, dashboard, one DuckDB state owner, and fixture worker in `deploy/local/compose.yaml` and its image definition in `deploy/local/Dockerfile`; assign a configurable host port and retain state on `local-down`.
 - [ ] T006 Implement guided prerequisite checks for Docker/Compose, Python, corporate CA, JFrog CLI authentication, npm, uv, Hugging Face access, and optional agent/model integrations in `scripts/install.py`; report missing items without inventing credentials or requiring every optional model to install.
 - [ ] T007 [P] Create secret-reference and environment configuration loading in `src/helio/adapters/identity_and_secrets/config.py` and documented placeholders in `deploy/local/env.example`; never place raw credentials in project records or images.
-- [ ] T008 Pin and invoke the agreed `swaggerapi/swagger-generator` image against `specs/001-helio-agent-platform/contracts/openapi.yaml`, generate a disposable client, and compare exercised API behavior with the Swagger 2.0 source in `scripts/check_contract.py`; do not treat FastAPI's generated OpenAPI 3.1 schema as the source contract.
+- [ ] T008 Pin and invoke the agreed `swaggerapi/swagger-generator` image against `specs/001-helio-agent-platform/contracts/openapi.yaml` and generate a disposable client in `scripts/check_contract.py`; validate the Swagger 2.0 source and generated output without requiring unimplemented API operations. Do not treat FastAPI's generated OpenAPI 3.1 schema as the source contract.
 
 ---
 
@@ -56,7 +56,7 @@ description: "Implementation tasks for the Helio Agent Platform"
 - [ ] T018 [P] Create FastAPI composition, `/api/v1/health`, and domain-to-HTTP error mapping in `src/helio/adapters/http_api/app.py`; keep `/api/v1` JSON routes separate from `/dashboard` HTML routes.
 - [ ] T019 [P] Create the base HTMX document and Spanish status/form vocabulary in `src/helio/adapters/dashboard/templates/base.html`, with semantic brand/ShadCN-style CSS tokens in `src/helio/adapters/dashboard/static/theme.css`; do not require React components.
 - [ ] T020 Create fixture identities, repositories, harness events, clocks, and state-owner lifecycle for deterministic tests in `tests/conftest.py`; cover Owner, Tech Lead, runner, viewer, and task-limited agent identities.
-- [ ] T021 Run and repair the foundational contract, state-owner, and authorization checks through `make contract-check` and the foundation subset of `make verify` in `Makefile`; confirm the local stack's API and state-owner connectivity on the chosen host.
+- [ ] T021 Run and repair the foundational source/generator check and implemented `/health` and authorization contract subset through `make contract-check` and the foundation subset of `make verify` in `Makefile`; confirm the local stack's API and state-owner connectivity on the chosen host. Reserve all-operation runtime checks for T117.
 
 **Checkpoint**: A local, authenticated control plane starts, validates its source contract, and persists ordered evidence through one state owner.
 
@@ -257,7 +257,7 @@ description: "Implementation tasks for the Helio Agent Platform"
 
 **Purpose**: Validate complete behavior, documentation, contract compatibility, and local handoff after the requested stories are integrated.
 
-- [ ] T117 [P] Extend the generated-client and source-contract drift check across all source Swagger operations and document any incompatible API migration in `scripts/check_contract.py` and `docs/helio/api-migration.md`; public contract changes require an impact record.
+- [ ] T117 [P] Run the full generated-client and source-contract runtime drift check across all implemented Swagger operations and document any incompatible API migration in `scripts/check_contract.py` and `docs/helio/api-migration.md`; public contract changes require an impact record.
 - [ ] T118 [P] Verify that every accepted run has criterion, gate result, independent verifier evidence, and no known failing regression in `tests/end_to_end/test_regression_evidence.py`; include failed, inconclusive, and override paths.
 - [ ] T119 [P] Verify guided install, Compose startup, API/dashboard response, state-owner connectivity, and non-destructive teardown on macOS and WSL2 fixtures in `tests/end_to_end/test_local_install.py`.
 - [ ] T120 [P] Verify cross-project isolation, least-privilege agent grants, outbound transfer redaction, and denial logging in `tests/integration/test_policy_redaction.py`.
@@ -268,19 +268,44 @@ description: "Implementation tasks for the Helio Agent Platform"
 
 ---
 
+## Analysis Remediation Tasks (Cross-Phase Prerequisites)
+
+**Execution rule**: These IDs were appended after analysis to preserve existing task and GitHub issue identities. Run each task before the earlier IDs it blocks, regardless of its position in this file. T123 is the first implementation gate; T136-T137 are release-validation gates. Existing task IDs do not change.
+
+- [ ] T123 After design tasks T124, T127, and T135 and before T001, have the Product Owner and Tech Lead record feature acceptance criteria, affected source contracts, deterministic and judge quality checks, and any architecture choice with rationale and rejected alternatives in `docs/helio/implementation-readiness.md`; link the record to `specs/001-helio-agent-platform/spec.md` and `contracts/`, mark missing decisions as unresolved, and do not start implementation until both roles have reviewed the evidence. Addresses the constitution pre-implementation gate.
+- [ ] T124 Before T015-T016, define a local first-operator bootstrap and authenticated session/token lifecycle in `specs/001-helio-agent-platform/spec.md`, `specs/001-helio-agent-platform/contracts/openapi.yaml`, and `docs/helio/auth-bootstrap.md`: one-time installer setup, no shared default credential, secret-backed tokens, revocation/recovery, audit, and project-scoped Owner/Tech Lead role assignment. Keep external identity providers optional and document the contract impact.
+- [ ] T125 Before T126, write first-operator, token expiration/revocation, recovery, unauthenticated request, and project-role isolation tests in `tests/integration/test_auth_bootstrap.py`; prove that fixture identities are not the production bootstrap path and that a new installation can reach an authenticated dashboard.
+- [ ] T126 After T006-T007 and T124-T125, implement the guided local operator bootstrap and secret-backed session/token validation in `scripts/install.py` and `src/helio/adapters/identity_and_secrets/bootstrap.py`; wire T015-T016 to the resulting identity port without creating a global bypass. T126 blocks completion of T015-T016 and T021.
+- [ ] T127 Before T044, T048, and T065, define project-configurable data-category classification, source/object labels, task-minimum category scope, unknown-category denial, and the Open WebUI action transport boundary in `specs/001-helio-agent-platform/contracts/agent-runtime.md` and `specs/001-helio-agent-platform/contracts/open-webui.md`; update `specs/001-helio-agent-platform/spec.md` and the Swagger 2.0 contract for any new public fields. Do not invent a mandatory universal category list.
+- [ ] T128 Before T129, write data-scope tests in `tests/integration/test_data_scope.py` for unclassified data, task scope wider than needed, revoked or unapproved providers, Open WebUI-initiated dispatch, and telemetry export; assert every allow/deny decision precedes transport and audits contain no payload or credentials.
+- [ ] T129 After T127-T128, implement source/object classification and task-minimum scope validation in `src/helio/application/commands/data_scope.py`; require T048 egress and T065 Open WebUI actions to use it before any nonlocal transfer, with policy revision and decision evidence. T129 blocks completion of T048, T065, T066, and T120.
+- [ ] T130 Before T131, write failure-diagnosis tests in `tests/integration/test_failure_diagnosis.py` for deterministic and judge failures, comparison with the last stable source/behavior state, absent initial baseline, recorded cause/evidence, bounded retry, and reasoning/model escalation; a retry without diagnosis must fail.
+- [ ] T131 After T130, implement a recorded failure-diagnosis decision in `src/helio/application/commands/failure_diagnosis.py`, including changed inputs since the last stable state or an explicit no-baseline finding; require T053-T054 to call it before retry or escalation and retain model, context sources, token/time, and verifier evidence. T131 blocks completion of T053-T054, T066, and T118.
+- [ ] T132 Before T133, write a new-task retrieval test in `tests/integration/test_resolution_context.py`: a related prior resolution is returned with project and source references, unrelated projects are excluded, and a clean-context execution agent receives only bounded relevant material while its independent verifier starts clean.
+- [ ] T133 After T049, T053, T108, and T132, add project-scoped prior-resolution lookup and bounded context injection at agent task start in `src/helio/application/commands/run_engine.py` and `src/helio/application/commands/knowledge.py`; route injected content through T048 egress admission for external providers, record selected source refs and retrieval failures, and keep verification context independent. T133 blocks completion of T116, T118, and T122.
+- [ ] T134 After T008 and before T021, add tests and explicit `source`, `foundation`, and `full` contract-check modes in `tests/contract/test_contract_check_modes.py`, `scripts/check_contract.py`, and `Makefile`: source mode validates Swagger and client generation without a running API, foundation mode exercises only implemented operations, and full mode exercises every operation at T117. Fail when a mode silently skips an operation it claims to cover.
+- [ ] T135 Before T080-T084, align US4 wording in `specs/001-helio-agent-platform/spec.md`, `specs/001-helio-agent-platform/plan.md`, and affected task/contract text so strategy comparison requires an **accepted specification revision** under normal or automatic acceptance rules; reserve **approved** for provider-policy and human approval decisions. Review cross-artifact terms without changing the acceptance policy.
+- [ ] T136 [P] After T119, run the guided install, Compose startup, API/dashboard, state-owner connectivity, and non-destructive teardown on an actual supported macOS host; capture host/tool versions, commands, results, and unresolved prerequisites in `docs/helio/validation-macos.md`. Fixture tests alone cannot complete this task.
+- [ ] T137 [P] After T119, run the same guided install and Compose smoke path on an actual Windows WSL2 host; capture host/tool versions, commands, results, and unresolved prerequisites in `docs/helio/validation-wsl2.md`. Fixture tests alone cannot complete this task.
+
+**Checkpoint**: T123-T135 close the specification-analysis gaps before their blocked work is accepted. T136-T137 must pass before T122 claims verified support on both local targets; unavailable hosts stay explicit release blockers, not assumed passes.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: Starts immediately. T001-T002 establish paths and dependencies; T003-T008 follow where their inputs require them.
-- **Foundational (Phase 2)**: Depends on setup. T009-T010 define checks; T011-T012 define common types and ports; T013-T020 provide persistence, access, API, UI, and fixtures; T021 proves the foundation. All user stories depend on this checkpoint.
+- **Pre-implementation gate**: Complete design tasks T124, T127, and T135 before T123; T123 must pass before T001. T125-T126 complete the local identity path before T015-T016 and T021.
+- **Setup (Phase 1)**: Starts after T123. T001-T002 establish paths and dependencies; T003-T008 follow where their inputs require them.
+- **Foundational (Phase 2)**: Depends on setup. T009-T010 define checks; T011-T012 define common types and ports; T013-T020 provide persistence, access, API, UI, and fixtures; T134 defines contract-check modes before T021 proves the foundation. All user stories depend on this checkpoint.
 - **US1 (Phase 3, P1)**: Starts after foundation. T025-T027 are independent models; T028-T030 compose them; T031-T033 expose the behavior; T034 validates the increment. This is the MVP.
-- **US2 (Phase 4, P2)**: Starts after foundation and uses an accepted US1 specification for live run admission. T040-T044 and T049 are independent model/port work. T045-T048, T050-T052, and T053-T058 form catalog, policy, runtime, gate, and quota layers. T059-T065 expose them; T066 validates the increment.
+- **US2 (Phase 4, P2)**: Starts after foundation and uses an accepted US1 specification for live run admission. T127-T129 define and enforce data scope before T044/T048/T065. T130-T131 establish diagnosis before T053-T054. T040-T044 and T049 are independent model/port work. T045-T048, T050-T052, and T053-T058 form catalog, policy, runtime, gate, and quota layers. T059-T065 expose them; T066 validates the increment.
 - **US3 (Phase 5, P2)**: Repository extraction and baseline evaluation can proceed beside US2 after foundation and the project entity from T025. T070-T071 precede T072-T076; T077-T079 follow. Its own baseline acceptance test uses prepared repositories; full autonomous-run admission also needs T058.
-- **US4 (Phase 6, P3)**: Needs US2 run/workspace results and accepted US1 specification; T082-T085 precede T086-T088.
+- **US4 (Phase 6, P3)**: T135 normalizes accepted-specification wording before T080-T084. It needs US2 run/workspace results and an accepted US1 specification; T082-T085 precede T086-T088.
 - **US5 (Phase 7, P3)**: Can start after US2 supplies a completed run. T092-T099 precede T100-T102; the two-strategy quickstart comparison also needs US4.
-- **US6 (Phase 8, P3)**: Knowledge models and CRUD can start after foundation. Run-trace and task-evidence integration needs US2; T106-T113 precede T114-T116.
-- **Polish (Phase 9)**: T117-T122 follow the stories they validate. T122 runs after all requested story checkpoints.
+- **US6 (Phase 8, P3)**: Knowledge models and CRUD can start after foundation. Run-trace and task-evidence integration needs US2; T106-T113 precede T114-T116. T132-T133 add prior-resolution context before T116.
+- **Polish (Phase 9)**: T117-T122 follow the stories they validate. T122 runs after all requested story checkpoints and actual-host evidence T136-T137; missing host evidence blocks a verified local-platform claim.
 
 ### User Story Dependencies
 
@@ -322,7 +347,7 @@ description: "Implementation tasks for the Helio Agent Platform"
 
 ### MVP First (User Story 1 Only)
 
-1. Complete setup T001-T008 and foundation T009-T021.
+1. Complete design T124/T127/T135 and readiness T123, then setup T001-T008, identity tests/implementation T125-T126, contract modes T134, and foundation T009-T021 in dependency order.
 2. Complete US1 T022-T034 with fixture identities; validate normal and automatic acceptance and both roadmap views.
 3. Stop at the US1 checkpoint to demonstrate a usable intake workflow without agent execution.
 
@@ -331,7 +356,7 @@ description: "Implementation tasks for the Helio Agent Platform"
 1. Add US2 pipelines and project access/quota controls; keep fixture agents as the deterministic verification path.
 2. Add US3 baseline reconstruction; connect its accepted version to US2 run admission.
 3. Add US4 isolated comparison, US5 prototype/environment review, and US6 knowledge/evidence retrieval as their inputs become available.
-4. Finish T117-T122 only after the requested story checkpoints pass. Numeric schedule and model-cost estimates require measured task timings, selected models, and budgets; this task list does not invent them.
+4. Finish T117-T122 only after the requested story checkpoints and applicable remediation tasks pass. T136-T137 require actual hosts before claiming both local targets are verified. Numeric schedule and model-cost estimates require measured task timings, selected models, and budgets; this task list does not invent them.
 
 ### Parallel Team Strategy
 
