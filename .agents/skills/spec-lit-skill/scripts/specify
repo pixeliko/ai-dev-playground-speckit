@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+project_dir="$(cd -- "$script_dir/../../../.." && pwd -P)"
+export SPECIFY_WORKSPACE="$(cd -- "${SPECIFY_WORKSPACE:-$PWD}" && pwd -P)"
+export LOCAL_UID="$(id -u)"
+export LOCAL_GID="$(id -g)"
+
+tty_args=()
+if [[ ! -t 0 || ! -t 1 ]]; then
+    tty_args=(-T)
+fi
+
+# An ephemeral container allows each invocation to target its own host directory.
+# The image is shared with the long-running Compose service.
+exec docker compose --project-directory "$project_dir" -f "$project_dir/compose.yaml" \
+    run --rm --no-deps "${tty_args[@]}" --entrypoint specify specify "$@"

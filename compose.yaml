@@ -1,0 +1,21 @@
+name: speckit
+
+services:
+  specify:
+    image: speckit-specify:local
+    build:
+      context: .
+      args:
+        SPECIFY_VERSION: ${SPECIFY_VERSION:-latest}
+    init: true
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /workspace
+    volumes:
+      - type: bind
+        source: ${SPECIFY_WORKSPACE:-.}
+        target: /workspace
+        bind:
+          create_host_path: false
+    # Keep a local container available for `docker compose exec specify specify ...`.
+    entrypoint: ["sleep"]
+    command: ["infinity"]
